@@ -1,7 +1,7 @@
 import './GaleryPage.style.scss';
 import { useAuthValue } from '../../app/auth/AuthProvider';
 import { getAuth, signOut } from "firebase/auth";
-import { ref, listAll, getDownloadURL } from "firebase/storage";
+import { ref, listAll, getDownloadURL, deleteObject } from "firebase/storage";
 import { storage } from "../../app/firebase"
 import { useEffect, useState } from 'react';
 import UploadGalery from './UploadGalery/UploadGalery';
@@ -40,17 +40,43 @@ function GaleryPage() {
         setImgs((imgs) => [...imgs, url]);
     }
 
+    function handledeleteImg(url: string) {
+        setImgs((imgs) => imgs.filter(img => img !== url))
+
+        const currentImage = ref(storage, url);
+
+        // Delete the file
+        deleteObject(currentImage).then(() => {
+            // File deleted successfully
+        }).catch((error) => {
+            // Uh-oh, an error occurred!
+        });
+
+    }
+
     useEffect(() => {
         fetchImages();
     }, []);
 
+    // useEffect(() => {
+    //     setImgs([])
+    //     fetchImages();
+    // }, [imgs]);
+
     return (
-        <div className="GaleryPage">
+        <div className="galeryPage">
             <p>{currentUser.email}</p>
             <button onClick={handleSignOut}>Sign out</button>
-            <ul>
+            <ul className='list'>
                 {imgs.map((img, index) => (
-                    <li key={index}><img src={img} alt={img} /></li>
+                    <li className='list_li' key={index}>
+
+                        <img className='list_img' src={img} alt={img} />
+                        <div>
+                            <button onClick={e => handledeleteImg(img)}>delete image</button>
+                        </div>
+
+                    </li>
                 )
                 )}
             </ul>
