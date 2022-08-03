@@ -1,5 +1,5 @@
 import {useAuthValue} from '../../../app/auth/AuthProvider'
-import './DdlGalery.style.scss';
+// import './DdlGalery.style.scss';
 import JSZip from 'jszip';
 import { saveAs } from 'file-saver';
 import {
@@ -9,9 +9,10 @@ import {
   getDownloadURL,
   getMetadata,
 } from 'firebase/storage';
+import { useStyles } from "./DdlGalery.style.jsx";
 
 function DdlGalery(props: any) {
-
+  const classes = useStyles();
   const { currentUser } = useAuthValue();
 
 
@@ -20,13 +21,11 @@ function DdlGalery(props: any) {
         const storage = getStorage();
         const folderRef = ref(storage, currentUser.uid);
         const folder = await listAll(folderRef);
-        console.log(folder)
         const promises = folder.items
           .map(async (item) => {
             const file = await getMetadata(item);
             const fileRef = ref(storage, item.fullPath);
             const fileBlob = await getDownloadURL(fileRef).then((url) => {
-              console.log(url, "test")
               return fetch(url).then((response) => response.blob());
             });
             jszip.file(file.name, fileBlob);
@@ -39,7 +38,7 @@ function DdlGalery(props: any) {
 
 
     return (
-        <div className="galeryDdl">
+        <div className={classes.root}>
 
             <button onClick={downloadFolderAsZip}>Telecharger tout</button>
 

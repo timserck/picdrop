@@ -3,8 +3,6 @@ import { getAuth, signInWithPopup, GoogleAuthProvider } from "firebase/auth";
 import { useNavigate } from 'react-router-dom';
 import {useAuthValue} from '../../app/auth/AuthProvider'
 
-
-
 function HomePage() {
 
     const provider = new GoogleAuthProvider();
@@ -25,7 +23,6 @@ function HomePage() {
                 navigate(`/${user.uid}/galery`, { replace: true });
                 // ...
             }).catch((error) => {
-
                 console.log(error)
                 // Handle Errors here.
                 const errorCode = error.code;
