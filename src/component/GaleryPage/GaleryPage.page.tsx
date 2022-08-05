@@ -1,30 +1,42 @@
 import './GaleryPage.style.scss';
 import { useAuthValue } from '../../app/auth/AuthProvider';
 import { getAuth, signOut } from "firebase/auth";
-import { ref, listAll, getDownloadURL, deleteObject } from "firebase/storage";
+import { ref, listAll, getDownloadURL, deleteObject, list } from "firebase/storage";
 import { storage } from "../../app/firebase"
-import { useEffect, useState } from 'react';
+import { ChangeEvent, useEffect, useState } from 'react';
 import UploadGalery from './UploadGalery/UploadGalery';
 import DdlGalery from './DdlGalery/DdlGalery';
+import { Pagination } from '@mui/material';
 
 function GaleryPage() {
 
     const { currentUser } = useAuthValue();
     const listRef = ref(storage, currentUser.uid);
-    const [imgs, setImgs] = useState<Array<string>>([])
+    const [imgs, setImgs] = useState<Array<any>>([])
+    const [nbrPages, setNbrPages] = useState<number | null >(null)
+    const [resultList, setresultList] = useState<any>({})
+    const LIMIT_PAGINATION = 2
+
+    const fetchAllImagesLength = async () => {
+        const result = await (await listAll(listRef))
+        setNbrPages(result.items?.length > 0  ? Math.floor(result.items.length / LIMIT_PAGINATION) : null)
+    }
 
     const fetchImages = async () => {
-
-        const result = await listAll(listRef)
-        result.items.forEach((imageRef: any) => {
-            getDownloadURL(imageRef)
-                .then(
-                    (url: string) => {
-                        setImgs((imgs) => [...imgs, url]);
-                    }
-                )
-        });
-
+        const result = await list(listRef, { maxResults: LIMIT_PAGINATION })
+        setresultList(result)
+    }
+    const handlePageChange = async (event: ChangeEvent<unknown>, page: number) => {
+        setImgs([])
+        if (resultList.nextPageToken && page !== 1) {
+            const secondPage = await list(listRef, {
+                maxResults: LIMIT_PAGINATION,
+                pageToken: resultList.nextPageToken,
+            });
+            setresultList(secondPage)
+        } else {
+            fetchImages()
+        }
     }
 
     function handleSignOut() {
@@ -38,6 +50,7 @@ function GaleryPage() {
 
     function handleUploadImage(url: string) {
         setImgs((imgs) => [...imgs, url]);
+        
     }
 
     function handledeleteImg(url: string) {
@@ -55,13 +68,30 @@ function GaleryPage() {
     }
 
     useEffect(() => {
+        fetchAllImagesLength()
         fetchImages();
     }, []);
+    useEffect(() => {
 
-    // useEffect(() => {
-    //     setImgs([])
-    //     fetchImages();
-    // }, [imgs]);
+        console.log(resultList)
+        if (resultList.items) {
+            resultList?.items.forEach((imageRef: any) => {
+                getDownloadURL(imageRef)
+                    .then(
+                        (url: string) => {
+                            setImgs((imgs) => [...imgs, url]);
+                        }
+                    )
+            });
+            console.log(resultList)
+        }
+        
+    }, [resultList]);
+
+    useEffect(() => {
+        fetchAllImagesLength()
+    }, [handleUploadImage, handledeleteImg])
+
 
     return (
         <div className="galeryPage">
@@ -81,10 +111,10 @@ function GaleryPage() {
                 )}
             </ul>
 
-            {currentUser.emailVerified && currentUser.email === "timserck@gmail.com" &&
-                <UploadGalery handleUploadImage={handleUploadImage} />}
+            {currentUser.emailVerified && currentUser.email === "timserck@gmail.com" && <UploadGalery handleUploadImage={handleUploadImage} />}
 
             <DdlGalery />
+            { nbrPages !== null && <Pagination onChange={handlePageChange} count={nbrPages} shape="rounded" />}
 
         </div>
 
